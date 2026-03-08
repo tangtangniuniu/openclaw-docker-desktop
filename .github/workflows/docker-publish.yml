@@ -1,0 +1,66 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    # 当有新的 tag 推送时也触发构建
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ "main", "master" ]
+  # 允许手动触发工作流
+  workflow_dispatch:
+
+env:
+  # 使用 Docker Hub
+  REGISTRY: docker.io
+  # TODO: 建议将其修改为你自己的 Docker Hub 镜像名称，例如 username/openclaw-ubuntu-desktop
+  IMAGE_NAME: tanghama/openclaw-ubuntu-desktop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        # 仅在非 Pull Request 时登录（避免外部 PR 尝试访问 Secret）
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # 使用专为 GitHub Actions 构建的 Dockerfile (不使用国内镜像源)
+          file: Dockerfile.github
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 缓存设置可以加快构建速度
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
