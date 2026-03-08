@@ -96,9 +96,11 @@ echo "========================================="
 docker run -d \
     --name "$CONTAINER_NAME" \
     --restart unless-stopped \
+    --shm-size=2g \
     $PRIVILEGED \
     $ENV_FILE_ARG \
     -v "$DATA_DIR:/home/share" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
     -p 22:22 \
     -p 4000:4000 \
     -p 5000:5000 \

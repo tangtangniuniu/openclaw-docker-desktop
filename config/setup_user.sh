@@ -37,6 +37,14 @@ echo "$USER:$PASSWORD" | chpasswd
 # 设置 ssl-cert 组
 usermod -aG ssl-cert "$USER" 2>/dev/null || true
 
+# 配置 Docker socket 访问（DooD）
+if [ -S /var/run/docker.sock ]; then
+    DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+    groupadd -g "$DOCKER_GID" docker 2>/dev/null || true
+    usermod -aG docker "$USER"
+    echo "Docker socket 已挂载，用户 $USER 已加入 docker 组 (GID=$DOCKER_GID)"
+fi
+
 # 创建 /run/user 目录
 mkdir -p "/run/user/$UID_VAL"
 chown "$UID_VAL:$GID_VAL" "/run/user/$UID_VAL"

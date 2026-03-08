@@ -28,12 +28,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+BUILD_ARGS=""
+
 echo "========================================="
 echo "  构建 OpenClaw Ubuntu Desktop 镜像"
 echo "  标签: $TAG"
 echo "========================================="
 
-docker build -t "$TAG" "$SCRIPT_DIR"
+docker build $BUILD_ARGS -t "$TAG" "$SCRIPT_DIR"
 
 echo ""
 echo "========================================="

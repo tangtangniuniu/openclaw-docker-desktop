@@ -22,8 +22,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 ENV PATH="/usr/local/bin:/usr/NX/scripts/vgl:$PATH"
 
-# ===== 基础层：中文 locale + 时区 + 字体 =====
+# ===== 镜像加速：APT 阿里云镜像（先 http 装证书，再切 https）=====
+RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources
+
+# ===== 基础层：ca-certificates + 中文 locale + 时区 + 字体 =====
 RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    sed -i 's|http://mirrors.aliyun.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         locales tzdata language-pack-zh-hans \
         fonts-wqy-zenhei fonts-noto-cjk fonts-noto-color-emoji && \
@@ -63,21 +70,29 @@ RUN apt-get update && \
         python3 python3-pip python3-numpy \
         openssh-server openssl git git-lfs tmux \
         jq gosu socat tini && \
+    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set install.trusted-host mirrors.aliyun.com && \
+    rm -rf /var/lib/apt/lists/*
+
+# ===== Docker CLI 层：DooD（Docker outside of Docker）=====
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
+    chmod a+r /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
     rm -rf /var/lib/apt/lists/*
 
 # ===== 桌面层：xfce4 + 应用 =====
 RUN apt-get update && \
-    add-apt-repository -y ppa:mozillateam/ppa && \
-    mkdir -p /etc/apt/preferences.d && \
-    printf "Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n" \
-        > /etc/apt/preferences.d/mozilla-firefox && \
     apt-get install -y --no-install-recommends \
-        xfce4 terminator pulseaudio ffmpeg firefox dbus-x11 bzip2 && \
+        xfce4 terminator pulseaudio ffmpeg dbus-x11 bzip2 && \
     (apt-get remove -y xfce4-screensaver --purge || true) && \
-    update-alternatives --set x-www-browser /usr/bin/firefox && \
     rm -rf /var/lib/apt/lists/*
 
-ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
+ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket \
+    CHROMIUM_FLAGS="--no-sandbox"
 
 # ===== 远程桌面层 =====
 COPY config/pre_install.sh /docker_config/pre_install.sh
@@ -93,24 +108,43 @@ RUN chmod +x /docker_config/*.sh && \
     bash /docker_config/post_install.sh && \
     rm -rf /var/lib/apt/lists/*
 
+ENV PYTHON=/usr/bin/python3 \
+    NODE_SQLITE3_BINARY_HOST_MIRROR=https://npmmirror.com/mirrors \
+    SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass \
+    SHARP_DIST_BASE_URL=https://npmmirror.com/mirrors/sharp-libvips \
+    ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+
 # ===== Node.js 层 =====
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
+RUN NODE_VERSION=22.14.0 && \
+    curl -fsSL "https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" | \
+    tar -xJ -C /usr/local --strip-components=1 && \
+    npm config set registry https://registry.npmmirror.com && \
+    # 告诉 Playwright 和 Puppeteer 在 npm install 时跳过下载浏览器二进制文件
+    export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 && \
+    export PUPPETEER_SKIP_DOWNLOAD=true && \
+    export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && \
     npm install -g npm@latest && \
     npm install -g \
         openclaw@2026.3.2 \
         opencode-ai@latest \
-        playwright \
+        playwright@1.58.0 \
         playwright-extra \
         puppeteer-extra-plugin-stealth && \
-    curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash && \
+    curl -fsSL https://ghfast.top/https://github.com/oven-sh/bun/releases/download/bun-v1.2.5/bun-linux-x64.zip -o /tmp/bun.zip && \
+    unzip -o /tmp/bun.zip -d /tmp && \
+    mv /tmp/bun-linux-x64/bun /usr/local/bin/bun && \
+    chmod +x /usr/local/bin/bun && \
+    rm -rf /tmp/bun* && \
     /usr/local/bin/bun install -g @tobilu/qmd && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.npm /root/.cache
 
 # ===== Chromium 层 =====
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        chromium-browser fonts-liberation && \
+        chromium-browser fonts-liberation \
+        libnss3 libgbm1 libasound2t64 && \
+    update-alternatives --set x-www-browser /usr/bin/chromium-browser && \
+    PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
     npx playwright install chromium --with-deps && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache
@@ -119,14 +153,14 @@ RUN apt-get update && \
 # 预装到 /opt/openclaw-extensions，首次启动时复制到用户目录
 RUN mkdir -p /opt/openclaw-extensions /opt/openclaw-qqbot && \
     cd /opt/openclaw-extensions && \
-    git clone --depth 1 https://github.com/soimy/openclaw-channel-dingtalk.git dingtalk && \
+    git clone --depth 1 https://ghfast.top/https://github.com/soimy/openclaw-channel-dingtalk.git dingtalk && \
     cd dingtalk && npm install --omit=dev --legacy-peer-deps && \
     cd /opt/openclaw-extensions && \
-    git clone --depth 1 -b v4.17.25 https://github.com/Daiyimo/openclaw-napcat.git napcat && \
+    git clone --depth 1 -b v4.17.25 https://ghfast.top/https://github.com/Daiyimo/openclaw-napcat.git napcat && \
     cd napcat && npm install --production && \
     cd /opt && \
-    git clone --depth 1 https://github.com/justlovemaki/qqbot.git openclaw-qqbot && \
-    cd openclaw-qqbot && npm install --omit=dev --legacy-peer-deps || true && \
+    git clone --depth 1 https://ghfast.top/https://github.com/justlovemaki/qqbot.git openclaw-qqbot && \
+    cd openclaw-qqbot && (npm install --omit=dev --legacy-peer-deps || true) && \
     cd /opt/openclaw-extensions && \
     mkdir -p wecom && cd wecom && \
     npm init -y && npm install @sunnoy/wecom@v1.5.1 && \
