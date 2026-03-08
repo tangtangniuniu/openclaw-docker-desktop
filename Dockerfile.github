@@ -3,78 +3,78 @@ FROM ubuntu:24.04
 LABEL maintainer="openclaw-ai-collaborator"
 
 # ===== 1. 环境变量与路径预设 =====
-ENV DEBIAN_FRONTEND=noninteractive 
-    USER=ubuntu 
-    UID=1000 
-    GID=1000 
-    LANG=en_US.UTF-8 
-    LC_ALL=en_US.UTF-8 
-    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers 
-    NODE_PATH=/usr/local/lib/node_modules 
-    BUN_INSTALL="/usr/local" 
+ENV DEBIAN_FRONTEND=noninteractive \
+    USER=ubuntu \
+    UID=1000 \
+    GID=1000 \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers \
+    NODE_PATH=/usr/local/lib/node_modules \
+    BUN_INSTALL="/usr/local" \
     TERM=xterm-256color
 
 # 远程桌面相关配置
-ENV REMOTE_DESKTOP=novnc 
-    HTTPS_CERT=/etc/ssl/certs/ssl-cert-snakeoil.pem 
+ENV REMOTE_DESKTOP=novnc \
+    HTTPS_CERT=/etc/ssl/certs/ssl-cert-snakeoil.pem \
     HTTPS_CERT_KEY=/etc/ssl/private/ssl-cert-snakeoil.key
 
 # ===== 2. 基础依赖与环境设置 (使用官方源) =====
-RUN apt-get update && apt-get install -y --no-install-recommends 
-        ca-certificates locales tzdata language-pack-en 
-        sudo vim wget curl zip unzip git git-lfs jq tini gosu 
-        net-tools iputils-ping openssh-server openssl 
-        build-essential python3 python3-pip 
-        software-properties-common dbus-x11 x11-utils 
-        fonts-wqy-zenhei fonts-noto-cjk fonts-noto-color-emoji fonts-liberation 
-        libnss3 libgbm1 libasound2t64 xvfb && 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates locales tzdata language-pack-en \
+        sudo vim wget curl zip unzip git git-lfs jq tini gosu \
+        net-tools iputils-ping openssh-server openssl \
+        build-essential python3 python3-pip \
+        software-properties-common dbus-x11 x11-utils \
+        fonts-wqy-zenhei fonts-noto-cjk fonts-noto-color-emoji fonts-liberation \
+        libnss3 libgbm1 libasound2t64 xvfb && \
     # 设置区域和时区
-    locale-gen en_US.UTF-8 && 
-    ln -sf /usr/share/zoneinfo/UTC /etc/localtime && 
+    locale-gen en_US.UTF-8 && \
+    ln -sf /usr/share/zoneinfo/UTC /etc/localtime && \
     # 处理用户逻辑：先删再建，确保 UID/GID 1000 属于我们
-    userdel -r ubuntu 2>/dev/null || true && 
-    groupadd -g $GID $USER && 
-    useradd -m -s /bin/bash -u $UID -g $GID $USER && 
-    echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && 
+    userdel -r ubuntu 2>/dev/null || true && \
+    groupadd -g $GID $USER && \
+    useradd -m -s /bin/bash -u $UID -g $GID $USER && \
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ===== 3. 桌面环境与输入法 =====
-RUN apt-get update && apt-get install -y --no-install-recommends 
-        xfce4 xfce4-terminal terminator pulseaudio ffmpeg 
-        fcitx fcitx-googlepinyin im-config && 
-    (apt-get remove -y xfce4-screensaver --purge || true) && 
-    im-config -n fcitx && 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        xfce4 xfce4-terminal terminator pulseaudio ffmpeg \
+        fcitx fcitx-googlepinyin im-config && \
+    (apt-get remove -y xfce4-screensaver --purge || true) && \
+    im-config -n fcitx && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ===== 4. Node.js, Playwright & Bun (使用官方源，移除镜像) =====
-RUN NODE_VERSION=22.14.0 && 
+RUN NODE_VERSION=22.14.0 && \
     # 使用官方 Node.js 源
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" | 
-    tar -xJ -C /usr/local --strip-components=1 && 
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" | \
+    tar -xJ -C /usr/local --strip-components=1 && \
     # 修正 git SSH 权限报错
-    git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && 
+    git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && \
     # npm 网络优化设置 (移除镜像)
-    npm config set fetch-retries 5 && 
-    npm config set fetch-retry-mintimeout 20000 && 
-    npm config set fetch-retry-maxtimeout 120000 && 
-    npm install -g npm@latest && 
-    npm install -g playwright@1.51.0 && 
-    npm install -g openclaw@2026.3.2 opencode-ai@latest && 
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install -g npm@latest && \
+    npm install -g playwright@1.51.0 && \
+    npm install -g openclaw@2026.3.2 opencode-ai@latest && \
     # --- Playwright 浏览器安装 (使用官方源) ---
-    mkdir -p $PLAYWRIGHT_BROWSERS_PATH && 
-    npx playwright install chromium --with-deps && 
+    mkdir -p $PLAYWRIGHT_BROWSERS_PATH && \
+    npx playwright install chromium --with-deps && \
     # 建立软链接
-    CHROME_BIN=$(find $PLAYWRIGHT_BROWSERS_PATH -name "chrome" -type f | head -n 1) && 
-    ln -sf "$CHROME_BIN" /usr/bin/google-chrome && 
-    ln -sf "$CHROME_BIN" /usr/bin/chromium-browser && 
-    ln -sf "$CHROME_BIN" /usr/bin/x-www-browser && 
+    CHROME_BIN=$(find $PLAYWRIGHT_BROWSERS_PATH -name "chrome" -type f | head -n 1) && \
+    ln -sf "$CHROME_BIN" /usr/bin/google-chrome && \
+    ln -sf "$CHROME_BIN" /usr/bin/chromium-browser && \
+    ln -sf "$CHROME_BIN" /usr/bin/x-www-browser && \
     # --- 安装 Bun (使用官方 GitHub Release) ---
-    curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.2.5/bun-linux-x64.zip -o /tmp/bun.zip && 
-    unzip -o /tmp/bun.zip -d /tmp && 
-    mv /tmp/bun-linux-x64/bun /usr/local/bin/bun && 
-    chmod +x /usr/local/bin/bun && 
+    curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.2.5/bun-linux-x64.zip -o /tmp/bun.zip && \
+    unzip -o /tmp/bun.zip -d /tmp && \
+    mv /tmp/bun-linux-x64/bun /usr/local/bin/bun && \
+    chmod +x /usr/local/bin/bun && \
     # 统一授权给 ubuntu 用户
-    chown -R $USER:$USER $PLAYWRIGHT_BROWSERS_PATH && 
+    chown -R $USER:$USER $PLAYWRIGHT_BROWSERS_PATH && \
     rm -rf /tmp/* /root/.npm /root/.cache
 
 # ===== 5. 复制配置文件与脚本 =====
@@ -83,12 +83,12 @@ COPY --chown=$USER:$USER config/*.sh /docker_config/
 RUN chmod +x /docker_config/*.sh
 
 # 设置 SSH
-RUN mkdir -p /var/run/sshd && 
+RUN mkdir -p /var/run/sshd && \
     sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # ===== 6. 最终配置 =====
 # 为用户配置无沙箱模式的浏览器别名（防止界面启动失败）
-RUN echo "alias chromium-browser='chromium-browser --no-sandbox'" >> /home/$USER/.bashrc && 
+RUN echo "alias chromium-browser='chromium-browser --no-sandbox'" >> /home/$USER/.bashrc && \
     echo "alias chrome='google-chrome --no-sandbox'" >> /home/$USER/.bashrc
 
 WORKDIR /home/$USER
