@@ -1,24 +1,21 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.3.2",
-    "lastTouchedAt": "2026-03-08T13:35:44.334Z"
+    "lastTouchedVersion": "2026.2.14",
+    "lastTouchedAt": "2026-03-08T13:35:38.067Z"
   },
   "update": {
     "checkOnStart": false
   },
   "browser": {
-    "executablePath": "/usr/bin/chromium-browser",
     "headless": true,
     "noSandbox": true,
-    "defaultProfile": "openclaw"
+    "defaultProfile": "openclaw",
+    "executablePath": "/usr/bin/chromium-browser"
   },
   "models": {
     "mode": "merge",
     "providers": {
       "default": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "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",
-        "api": "openai-completions",
         "models": [
           {
             "id": "gpt-4o",
@@ -54,19 +51,15 @@
             "contextWindow": 262144,
             "maxTokens": 8192
           }
-        ]
+        ],
+        "api": "openai-completions",
+        "apiKey": "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",
+        "baseUrl": "https://integrate.api.nvidia.com/v1"
       }
     }
   },
   "agents": {
     "defaults": {
-      "model": {
-        "primary": "qwen/qwen3.5-122b-a10b"
-      },
-      "imageModel": {
-        "primary": "qwen/qwen3.5-122b-a10b"
-      },
-      "workspace": "/home/node/.openclaw/workspace",
       "compaction": {
         "mode": "safeguard"
       },
@@ -74,7 +67,14 @@
       "maxConcurrent": 4,
       "subagents": {
         "maxConcurrent": 8
-      }
+      },
+      "model": {
+        "primary": "qwen/qwen3.5-122b-a10b"
+      },
+      "imageModel": {
+        "primary": "qwen/qwen3.5-122b-a10b"
+      },
+      "workspace": "/home/node/.openclaw/workspace"
     }
   },
   "messages": {
@@ -87,26 +87,14 @@
   },
   "commands": {
     "native": "auto",
-    "nativeSkills": "auto",
-    "restart": true,
-    "ownerDisplay": "raw"
+    "nativeSkills": "auto"
   },
   "channels": {},
-  "gateway": {
-    "port": 18789,
-    "mode": "local",
-    "bind": "lan",
-    "controlUi": {
-      "allowedOrigins": [
-        "http://localhost"
-      ],
-      "allowInsecureAuth": true,
-      "dangerouslyDisableDeviceAuth": false
-    },
-    "auth": {
-      "mode": "token",
-      "token": "123456"
-    }
+  "plugins": {
+    "entries": {},
+    "installs": {},
+    "allow": [],
+    "enabled": true
   },
   "memory": {
     "backend": "qmd",
@@ -121,16 +109,20 @@
       ]
     }
   },
-  "plugins": {
-    "enabled": true,
-    "allow": [
-      "qwen-portal-auth"
-    ],
-    "entries": {
-      "qwen-portal-auth": {
-        "enabled": true
-      }
+  "gateway": {
+    "port": 18789,
+    "bind": "lan",
+    "mode": "local",
+    "controlUi": {
+      "allowInsecureAuth": true,
+      "dangerouslyDisableDeviceAuth": false,
+      "allowedOrigins": [
+        "http://localhost"
+      ]
     },
-    "installs": {}
+    "auth": {
+      "token": "123456",
+      "mode": "token"
+    }
   }
 }

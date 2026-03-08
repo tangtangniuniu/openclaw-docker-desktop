@@ -5,7 +5,7 @@ LABEL maintainer="openclaw-ubuntu-desktop"
 # ===== 环境变量 =====
 ENV DEBIAN_FRONTEND=noninteractive \
     USER=ubuntu \
-    PASSWORD=ubuntu \
+    PASSWORD=zxt2000 \
     UID=1000 \
     GID=1000 \
     LANG=zh_CN.UTF-8 \
@@ -14,11 +14,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HTTPS_CERT=/etc/ssl/certs/ssl-cert-snakeoil.pem \
     HTTPS_CERT_KEY=/etc/ssl/private/ssl-cert-snakeoil.key \
     VGL_DISPLAY=egl \
-    REMOTE_DESKTOP=nomachine \
+    REMOTE_DESKTOP=novnc \
     VNC_THREADS=2 \
     BUN_INSTALL="/usr/local" \
     NODE_PATH=/usr/local/lib/node_modules \
     TERM=xterm-256color
+    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 
 ENV PATH="/usr/local/bin:/usr/NX/scripts/vgl:$PATH"
 
@@ -120,9 +121,9 @@ RUN NODE_VERSION=22.14.0 && \
     tar -xJ -C /usr/local --strip-components=1 && \
     npm config set registry https://registry.npmmirror.com && \
     # 告诉 Playwright 和 Puppeteer 在 npm install 时跳过下载浏览器二进制文件
-    export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 && \
-    export PUPPETEER_SKIP_DOWNLOAD=true && \
-    export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && \
+    #export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 && \
+    #export PUPPETEER_SKIP_DOWNLOAD=true && \
+    #export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && \
     npm install -g npm@latest && \
     npm install -g \
         openclaw@2026.3.2 \
@@ -130,6 +131,9 @@ RUN NODE_VERSION=22.14.0 && \
         playwright@1.58.0 \
         playwright-extra \
         puppeteer-extra-plugin-stealth && \
+        mkdir -p /opt/pw-browsers && \
+    	npx playwright install chromium --with-deps && \
+    	chown -R ubuntu:ubuntu /opt/pw-browsers/
     curl -fsSL https://ghfast.top/https://github.com/oven-sh/bun/releases/download/bun-v1.2.5/bun-linux-x64.zip -o /tmp/bun.zip && \
     unzip -o /tmp/bun.zip -d /tmp && \
     mv /tmp/bun-linux-x64/bun /usr/local/bin/bun && \
@@ -141,13 +145,19 @@ RUN NODE_VERSION=22.14.0 && \
 # ===== Chromium 层 =====
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        chromium-browser fonts-liberation \
+        fonts-liberation \
         libnss3 libgbm1 libasound2t64 && \
-    update-alternatives --set x-www-browser /usr/bin/chromium-browser && \
+    #update-alternatives --set x-www-browser /usr/bin/chromium-browser && \
     #PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
     npx playwright install chromium --with-deps && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache
+
+# 既然 Playwright 已经下载了最适合它的 Chromium，我们直接给系统做一个软链接
+RUN BROWSER_PATH=$(find /opt/pw-browsers -name "chrome" -type f | head -n 1) && \
+    ln -sf "$BROWSER_PATH" /usr/bin/google-chrome && \
+    ln -sf "$BROWSER_PATH" /usr/bin/chromium-browser && \
+    ln -sf "$BROWSER_PATH" /usr/bin/x-www-browser
 
 # ===== 插件安装层 =====
 # 预装到 /opt/openclaw-extensions，首次启动时复制到用户目录
@@ -184,6 +194,6 @@ RUN mkdir -p /var/run/sshd && \
 
 VOLUME /home/share
 
-EXPOSE 22 4000 5000 18789 18790
+EXPOSE 22 4000 5000 18789 18790 5900 5901
 
 ENTRYPOINT ["/docker_config/entrypoint.sh"]

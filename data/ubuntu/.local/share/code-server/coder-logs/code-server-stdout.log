@@ -6,3 +6,35 @@
 [2026-03-08T10:49:43.589Z] info      - Using password from $PASSWORD
 [2026-03-08T10:49:43.589Z] info    - Using certificate for HTTPS: /etc/ssl/certs/ssl-cert-snakeoil.pem
 [2026-03-08T10:49:43.589Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock
+[2026-03-08T12:48:24.690Z] info  code-server 4.108.2 3c0b449c6e6e37b44a8a7938c0d8a3049926a64c
+[2026-03-08T12:48:24.697Z] info  Using user-data-dir /home/ubuntu/.local/share/code-server
+[2026-03-08T12:48:24.739Z] info  Using config file /home/ubuntu/.config/code-server/config.yaml
+[2026-03-08T12:48:24.739Z] info  HTTPS server listening on https://0.0.0.0:5000/
+[2026-03-08T12:48:24.739Z] info    - Authentication is enabled
+[2026-03-08T12:48:24.739Z] info      - Using password from $PASSWORD
+[2026-03-08T12:48:24.739Z] info    - Using certificate for HTTPS: /etc/ssl/certs/ssl-cert-snakeoil.pem
+[2026-03-08T12:48:24.739Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock
+[20:49:26] 
+
+
+
+
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[20:49:26] Extension host agent started.
+[20:49:26] Started initializing default profile extensions in extensions installation folder. file:///home/ubuntu/.local/share/code-server/extensions
+[20:49:26] Completed initializing default profile extensions in extensions installation folder. file:///home/ubuntu/.local/share/code-server/extensions
+[20:49:33] [<unknown>][12b180aa][ManagementConnection] New connection established.
+[20:49:35] [<unknown>][c8619d2b][ExtensionHostConnection] New connection established.
+[20:49:35] [<unknown>][c8619d2b][ExtensionHostConnection] <999> Launched Extension Host Process.
+[20:49:36] [<unknown>][c8619d2b][ExtensionHostConnection] <999> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+[20:50:05] [<unknown>][12b180aa][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.
+[20:50:05] [<unknown>][c8619d2b][ExtensionHostConnection] <999> Extension Host Process exited with code: 0, signal: null.
+[2026-03-08T13:35:36.327Z] info  code-server 4.108.2 3c0b449c6e6e37b44a8a7938c0d8a3049926a64c
+[2026-03-08T13:35:36.328Z] info  Using user-data-dir /home/ubuntu/.local/share/code-server
+[2026-03-08T13:35:36.345Z] info  Using config file /home/ubuntu/.config/code-server/config.yaml
+[2026-03-08T13:35:36.345Z] info  HTTP server listening on http://0.0.0.0:5000/
+[2026-03-08T13:35:36.345Z] info    - Authentication is enabled
+[2026-03-08T13:35:36.345Z] info      - Using password from $PASSWORD
+[2026-03-08T13:35:36.345Z] info    - Not serving HTTPS
+[2026-03-08T13:35:36.346Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock

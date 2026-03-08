@@ -99,13 +99,15 @@ docker run -d \
     --shm-size=2g \
     $PRIVILEGED \
     $ENV_FILE_ARG \
+    -e DISABLE_HTTPS=true \
     -v "$DATA_DIR:/home/share" \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    -p 22:22 \
-    -p 4000:4000 \
-    -p 5000:5000 \
+    -p 1022:22 \
+    -p 14000:4000 \
+    -p 15000:5000 \
+    -p 15900:5900 \
     -p 18789:18789 \
-    -p 18790:18790 \
+    -p 12790:18790 \
     $EXTRA_ARGS \
     "$IMAGE"
 
