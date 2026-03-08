@@ -1,7 +1,7 @@
 {
   "meta": {
     "lastTouchedVersion": "2026.3.2",
-    "lastTouchedAt": "2026-03-08T13:35:44.334Z"
+    "lastTouchedAt": "2026-03-08T14:40:55.042Z"
   },
   "update": {
     "checkOnStart": false
@@ -66,7 +66,7 @@
       "imageModel": {
         "primary": "qwen/qwen3.5-122b-a10b"
       },
-      "workspace": "/home/node/.openclaw/workspace",
+      "workspace": "/home/ubuntu/.openclaw/workspace",
       "compaction": {
         "mode": "safeguard"
       },
@@ -114,7 +114,7 @@
       "command": "/usr/local/bin/qmd",
       "paths": [
         {
-          "path": "/home/node/.openclaw/workspace",
+          "path": "/home/ubuntu/.openclaw/workspace",
           "name": "workspace",
           "pattern": "**/*.md"
         }

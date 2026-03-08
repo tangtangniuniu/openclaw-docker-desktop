@@ -38,3 +38,19 @@
 [2026-03-08T13:35:36.345Z] info      - Using password from $PASSWORD
 [2026-03-08T13:35:36.345Z] info    - Not serving HTTPS
 [2026-03-08T13:35:36.346Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock
+[2026-03-08T14:40:53.089Z] info  code-server 4.108.2 3c0b449c6e6e37b44a8a7938c0d8a3049926a64c
+[2026-03-08T14:40:53.098Z] info  Using user-data-dir /home/ubuntu/.local/share/code-server
+[2026-03-08T14:40:53.126Z] info  Using config file /home/ubuntu/.config/code-server/config.yaml
+[2026-03-08T14:40:53.127Z] info  HTTP server listening on http://0.0.0.0:5000/
+[2026-03-08T14:40:53.127Z] info    - Authentication is enabled
+[2026-03-08T14:40:53.127Z] info      - Using password from $PASSWORD
+[2026-03-08T14:40:53.127Z] info    - Not serving HTTPS
+[2026-03-08T14:40:53.127Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock
+[2026-03-08T14:46:56.746Z] info  code-server 4.108.2 3c0b449c6e6e37b44a8a7938c0d8a3049926a64c
+[2026-03-08T14:46:56.748Z] info  Using user-data-dir /home/ubuntu/.local/share/code-server
+[2026-03-08T14:46:56.770Z] info  Using config file /home/ubuntu/.config/code-server/config.yaml
+[2026-03-08T14:46:56.770Z] info  HTTP server listening on http://0.0.0.0:5000/
+[2026-03-08T14:46:56.770Z] info    - Authentication is enabled
+[2026-03-08T14:46:56.770Z] info      - Using password from $PASSWORD
+[2026-03-08T14:46:56.770Z] info    - Not serving HTTPS
+[2026-03-08T14:46:56.770Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock

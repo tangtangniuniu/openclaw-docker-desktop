@@ -1,199 +1,104 @@
 FROM ubuntu:24.04
 
-LABEL maintainer="openclaw-ubuntu-desktop"
+LABEL maintainer="openclaw-ai-collaborator"
 
-# ===== 环境变量 =====
+# ===== 1. 环境变量与路径预设 =====
 ENV DEBIAN_FRONTEND=noninteractive \
     USER=ubuntu \
-    PASSWORD=zxt2000 \
     UID=1000 \
     GID=1000 \
     LANG=zh_CN.UTF-8 \
-    LANGUAGE=zh_CN:zh \
     LC_ALL=zh_CN.UTF-8 \
-    HTTPS_CERT=/etc/ssl/certs/ssl-cert-snakeoil.pem \
-    HTTPS_CERT_KEY=/etc/ssl/private/ssl-cert-snakeoil.key \
-    VGL_DISPLAY=egl \
-    REMOTE_DESKTOP=novnc \
-    VNC_THREADS=2 \
-    BUN_INSTALL="/usr/local" \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers \
     NODE_PATH=/usr/local/lib/node_modules \
+    BUN_INSTALL="/usr/local" \
     TERM=xterm-256color
-    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 
-ENV PATH="/usr/local/bin:/usr/NX/scripts/vgl:$PATH"
+# 远程桌面相关配置
+ENV REMOTE_DESKTOP=novnc \
+    HTTPS_CERT=/etc/ssl/certs/ssl-cert-snakeoil.pem \
+    HTTPS_CERT_KEY=/etc/ssl/private/ssl-cert-snakeoil.key
 
-# ===== 镜像加速：APT 阿里云镜像（先 http 装证书，再切 https）=====
+# ===== 2. 软件源与基础依赖 (合并以减少层数) =====
 RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
-    sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources
-
-# ===== 基础层：ca-certificates + 中文 locale + 时区 + 字体 =====
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
-    sed -i 's|http://mirrors.aliyun.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        locales tzdata language-pack-zh-hans \
-        fonts-wqy-zenhei fonts-noto-cjk fonts-noto-color-emoji && \
+    sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates locales tzdata language-pack-zh-hans \
+        sudo vim wget curl zip unzip git git-lfs jq tini gosu \
+        net-tools iputils-ping openssh-server openssl \
+        build-essential python3 python3-pip \
+        software-properties-common dbus-x11 x11-utils \
+        fonts-wqy-zenhei fonts-noto-cjk fonts-noto-color-emoji fonts-liberation \
+        libnss3 libgbm1 libasound2t64 xvfb && \
+    # 中文区域设置
     locale-gen zh_CN.UTF-8 && \
-    echo "LANG=zh_CN.UTF-8" > /etc/default/locale && \
-    echo "LANGUAGE=zh_CN:zh" >> /etc/default/locale && \
-    echo "LC_ALL=zh_CN.UTF-8" >> /etc/default/locale && \
-    update-locale LANG=zh_CN.UTF-8 LC_ALL=zh_CN.UTF-8 && \
-    echo "Asia/Shanghai" > /etc/timezone && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata && \
-    rm -rf /var/lib/apt/lists/*
+    # 处理用户逻辑：先删再建，确保 UID/GID 1000 属于我们
+    userdel -r ubuntu 2>/dev/null || true && \
+    groupadd -g $GID $USER && \
+    useradd -m -s /bin/bash -u $UID -g $GID $USER && \
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ===== 输入法层：fcitx + googlepinyin =====
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        fcitx fcitx-googlepinyin fcitx-frontend-gtk3 fcitx-ui-classic \
-        dbus-x11 im-config && \
-    im-config -n fcitx && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV GTK_IM_MODULE=fcitx \
-    QT_IM_MODULE=fcitx \
-    XMODIFIERS=@im=fcitx \
-    INPUT_METHOD=fcitx
-
-# ===== 工具层：基础系统工具（桌面层依赖 software-properties-common，须先安装）=====
-# Remove default ubuntu user if exists
-RUN userdel -r ubuntu 2>/dev/null || true
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        sudo vim gedit locales gnupg2 wget curl zip unzip \
-        lsb-release bash-completion ca-certificates \
-        net-tools iputils-ping mesa-utils \
-        software-properties-common build-essential \
-        python3 python3-pip python3-numpy \
-        openssh-server openssl git git-lfs tmux \
-        jq gosu socat tini && \
-    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
-    pip config set install.trusted-host mirrors.aliyun.com && \
-    rm -rf /var/lib/apt/lists/*
-
-# ===== Docker CLI 层：DooD（Docker outside of Docker）=====
-RUN install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
-    chmod a+r /etc/apt/keyrings/docker.asc && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-        > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
-    rm -rf /var/lib/apt/lists/*
-
-# ===== 桌面层：xfce4 + 应用 =====
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        xfce4 terminator pulseaudio ffmpeg dbus-x11 bzip2 && \
+# ===== 3. 桌面环境与输入法 =====
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        xfce4 xfce4-terminal terminator pulseaudio ffmpeg \
+        fcitx fcitx-googlepinyin im-config && \
     (apt-get remove -y xfce4-screensaver --purge || true) && \
-    rm -rf /var/lib/apt/lists/*
+    im-config -n fcitx && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket \
-    CHROMIUM_FLAGS="--no-sandbox"
-
-# ===== 远程桌面层 =====
-COPY config/pre_install.sh /docker_config/pre_install.sh
-COPY config/post_install.sh /docker_config/post_install.sh
-COPY config/install_nomachine.sh /docker_config/install_nomachine.sh
-COPY config/install_kasmvnc.sh /docker_config/install_kasmvnc.sh
-COPY config/install_novnc.sh /docker_config/install_novnc.sh
-COPY config/start_nomachine.sh /docker_config/start_nomachine.sh
-COPY config/start_kasmvnc.sh /docker_config/start_kasmvnc.sh
-COPY config/start_novnc.sh /docker_config/start_novnc.sh
-
-RUN chmod +x /docker_config/*.sh && \
-    bash /docker_config/post_install.sh && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV PYTHON=/usr/bin/python3 \
-    NODE_SQLITE3_BINARY_HOST_MIRROR=https://npmmirror.com/mirrors \
-    SASS_BINARY_SITE=https://npmmirror.com/mirrors/node-sass \
-    SHARP_DIST_BASE_URL=https://npmmirror.com/mirrors/sharp-libvips \
-    ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-
-# ===== Node.js 层 =====
+# ===== 4. Node.js, Playwright & Bun (核心逻辑) =====
+# ===== 4. Node.js & Playwright & 浏览器 综合层 (增加网络稳定性优化) =====
 RUN NODE_VERSION=22.14.0 && \
     curl -fsSL "https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" | \
     tar -xJ -C /usr/local --strip-components=1 && \
+    # --- 关键修正：解决 openclaw 依赖项 SSH 权限报错 ---
+    git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && \
+    # --- npm 网络优化设置 ---
     npm config set registry https://registry.npmmirror.com && \
-    # 告诉 Playwright 和 Puppeteer 在 npm install 时跳过下载浏览器二进制文件
-    #export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 && \
-    #export PUPPETEER_SKIP_DOWNLOAD=true && \
-    #export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    # 分步安装，避免大包堆叠导致超时
     npm install -g npm@latest && \
-    npm install -g \
-        openclaw@2026.3.2 \
-        opencode-ai@latest \
-        playwright@1.58.0 \
-        playwright-extra \
-        puppeteer-extra-plugin-stealth && \
-        mkdir -p /opt/pw-browsers && \
-    	npx playwright install chromium --with-deps && \
-    	chown -R ubuntu:ubuntu /opt/pw-browsers/
+    npm install -g playwright@1.51.0 && \
+    npm install -g openclaw@2026.3.2 opencode-ai@latest && \
+    # --- Playwright 浏览器安装 (添加镜像加速) ---
+    mkdir -p $PLAYWRIGHT_BROWSERS_PATH && \
+    PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
+    npx playwright install chromium --with-deps && \
+    # 建立软链接
+    CHROME_BIN=$(find $PLAYWRIGHT_BROWSERS_PATH -name "chrome" -type f | head -n 1) && \
+    ln -sf "$CHROME_BIN" /usr/bin/google-chrome && \
+    ln -sf "$CHROME_BIN" /usr/bin/chromium-browser && \
+    ln -sf "$CHROME_BIN" /usr/bin/x-www-browser && \
+    # --- 安装 Bun ---
     curl -fsSL https://ghfast.top/https://github.com/oven-sh/bun/releases/download/bun-v1.2.5/bun-linux-x64.zip -o /tmp/bun.zip && \
     unzip -o /tmp/bun.zip -d /tmp && \
     mv /tmp/bun-linux-x64/bun /usr/local/bin/bun && \
     chmod +x /usr/local/bin/bun && \
-    rm -rf /tmp/bun* && \
-    /usr/local/bin/bun install -g @tobilu/qmd && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /root/.npm /root/.cache
-
-# ===== Chromium 层 =====
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        fonts-liberation \
-        libnss3 libgbm1 libasound2t64 && \
-    #update-alternatives --set x-www-browser /usr/bin/chromium-browser && \
-    #PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
-    npx playwright install chromium --with-deps && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache
-
-# 既然 Playwright 已经下载了最适合它的 Chromium，我们直接给系统做一个软链接
-RUN BROWSER_PATH=$(find /opt/pw-browsers -name "chrome" -type f | head -n 1) && \
-    ln -sf "$BROWSER_PATH" /usr/bin/google-chrome && \
-    ln -sf "$BROWSER_PATH" /usr/bin/chromium-browser && \
-    ln -sf "$BROWSER_PATH" /usr/bin/x-www-browser
-
-# ===== 插件安装层 =====
-# 预装到 /opt/openclaw-extensions，首次启动时复制到用户目录
-RUN mkdir -p /opt/openclaw-extensions /opt/openclaw-qqbot && \
-    cd /opt/openclaw-extensions && \
-    git clone --depth 1 https://ghfast.top/https://github.com/soimy/openclaw-channel-dingtalk.git dingtalk && \
-    cd dingtalk && npm install --omit=dev --legacy-peer-deps && \
-    cd /opt/openclaw-extensions && \
-    git clone --depth 1 -b v4.17.25 https://ghfast.top/https://github.com/Daiyimo/openclaw-napcat.git napcat && \
-    cd napcat && npm install --production && \
-    cd /opt && \
-    git clone --depth 1 https://ghfast.top/https://github.com/justlovemaki/qqbot.git openclaw-qqbot && \
-    cd openclaw-qqbot && (npm install --omit=dev --legacy-peer-deps || true) && \
-    cd /opt/openclaw-extensions && \
-    mkdir -p wecom && cd wecom && \
-    npm init -y && npm install @sunnoy/wecom@v1.5.1 && \
-    find /opt/openclaw-extensions -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true && \
-    rm -rf /opt/openclaw-qqbot/.git && \
+    # 统一授权给 ubuntu 用户
+    chown -R $USER:$USER $PLAYWRIGHT_BROWSERS_PATH && \
     rm -rf /tmp/* /root/.npm /root/.cache
 
-# ===== 最终配置层 =====
-COPY config/setup_user.sh /docker_config/setup_user.sh
-COPY config/openclaw_init.sh /docker_config/openclaw_init.sh
-COPY config/entrypoint.sh /docker_config/entrypoint.sh
+# ===== 5. 复制配置文件与脚本 =====
+# 假设你的 config 目录与 Dockerfile 在同一级
+COPY --chown=$USER:$USER config/*.sh /docker_config/
+RUN chmod +x /docker_config/*.sh
 
-RUN chmod +x /docker_config/setup_user.sh \
-              /docker_config/openclaw_init.sh \
-              /docker_config/entrypoint.sh
-
-# SSH 配置
+# 设置 SSH
 RUN mkdir -p /var/run/sshd && \
-    sed -i 's/#*PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
-    sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd
+    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 
+# ===== 6. 最终配置 =====
+# 为用户配置无沙箱模式的浏览器别名（防止界面启动失败）
+RUN echo "alias chromium-browser='chromium-browser --no-sandbox'" >> /home/$USER/.bashrc && \
+    echo "alias chrome='google-chrome --no-sandbox'" >> /home/$USER/.bashrc
+
+WORKDIR /home/$USER
 VOLUME /home/share
+EXPOSE 22 4000 5900
 
-EXPOSE 22 4000 5000 18789 18790 5900 5901
-
-ENTRYPOINT ["/docker_config/entrypoint.sh"]
+# 使用 tini 接管信号处理，防止进程僵死
+ENTRYPOINT ["/usr/bin/tini", "--", "/docker_config/entrypoint.sh"]
