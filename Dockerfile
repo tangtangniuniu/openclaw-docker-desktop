@@ -50,24 +50,10 @@ ENV GTK_IM_MODULE=fcitx \
     XMODIFIERS=@im=fcitx \
     INPUT_METHOD=fcitx
 
-# ===== 桌面层：xfce4 + 应用 =====
+# ===== 工具层：基础系统工具（桌面层依赖 software-properties-common，须先安装）=====
 # Remove default ubuntu user if exists
 RUN userdel -r ubuntu 2>/dev/null || true
 
-RUN apt-get update && \
-    add-apt-repository -y ppa:mozillateam/ppa && \
-    mkdir -p /etc/apt/preferences.d && \
-    printf "Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n" \
-        > /etc/apt/preferences.d/mozilla-firefox && \
-    apt-get install -y --no-install-recommends \
-        xfce4 terminator pulseaudio ffmpeg firefox dbus-x11 bzip2 && \
-    apt-get remove -y xfce4-screensaver --purge || true && \
-    update-alternatives --set x-www-browser /usr/bin/firefox && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
-
-# ===== 工具层：基础系统工具 =====
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         sudo vim gedit locales gnupg2 wget curl zip unzip \
@@ -78,6 +64,20 @@ RUN apt-get update && \
         openssh-server openssl git git-lfs tmux \
         jq gosu socat tini && \
     rm -rf /var/lib/apt/lists/*
+
+# ===== 桌面层：xfce4 + 应用 =====
+RUN apt-get update && \
+    add-apt-repository -y ppa:mozillateam/ppa && \
+    mkdir -p /etc/apt/preferences.d && \
+    printf "Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n" \
+        > /etc/apt/preferences.d/mozilla-firefox && \
+    apt-get install -y --no-install-recommends \
+        xfce4 terminator pulseaudio ffmpeg firefox dbus-x11 bzip2 && \
+    (apt-get remove -y xfce4-screensaver --purge || true) && \
+    update-alternatives --set x-www-browser /usr/bin/firefox && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
 # ===== 远程桌面层 =====
 COPY config/pre_install.sh /docker_config/pre_install.sh
