@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Fcitx
+Exec=fcitx-autostart
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true

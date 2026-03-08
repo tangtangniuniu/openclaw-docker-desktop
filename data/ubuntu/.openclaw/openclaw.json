@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.14",
+    "lastTouchedAt": "2026-03-08T10:49:59.717Z"
+  },
+  "update": {
+    "checkOnStart": false
+  },
+  "browser": {
+    "headless": true,
+    "noSandbox": true,
+    "defaultProfile": "openclaw",
+    "executablePath": "/usr/bin/chromium-browser"
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "default": {
+        "models": [
+          {
+            "id": "gpt-4o",
+            "name": "gpt-4o",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          }
+        ],
+        "api": "openai-completions"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "elevatedDefault": "full",
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      },
+      "model": {
+        "primary": "default/gpt-4o"
+      },
+      "imageModel": {
+        "primary": "default/gpt-4o"
+      },
+      "workspace": "/home/ubuntu/.openclaw/workspace"
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions",
+    "tts": {
+      "edge": {
+        "voice": "zh-CN-XiaoxiaoNeural"
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto"
+  },
+  "channels": {},
+  "plugins": {
+    "entries": {},
+    "installs": {},
+    "allow": []
+  },
+  "memory": {
+    "backend": "qmd",
+    "qmd": {
+      "command": "/usr/local/bin/qmd",
+      "paths": [
+        {
+          "path": "/home/ubuntu/.openclaw/workspace",
+          "name": "workspace",
+          "pattern": "**/*.md"
+        }
+      ]
+    }
+  }
+}

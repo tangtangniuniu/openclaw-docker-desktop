@@ -1,0 +1,8 @@
+[2026-03-08T10:49:43.546Z] info  code-server 4.108.2 3c0b449c6e6e37b44a8a7938c0d8a3049926a64c
+[2026-03-08T10:49:43.548Z] info  Using user-data-dir /home/ubuntu/.local/share/code-server
+[2026-03-08T10:49:43.589Z] info  Using config file /home/ubuntu/.config/code-server/config.yaml
+[2026-03-08T10:49:43.589Z] info  HTTPS server listening on https://0.0.0.0:5000/
+[2026-03-08T10:49:43.589Z] info    - Authentication is enabled
+[2026-03-08T10:49:43.589Z] info      - Using password from $PASSWORD
+[2026-03-08T10:49:43.589Z] info    - Using certificate for HTTPS: /etc/ssl/certs/ssl-cert-snakeoil.pem
+[2026-03-08T10:49:43.589Z] info  Session server listening on /home/ubuntu/.local/share/code-server/code-server-ipc.sock

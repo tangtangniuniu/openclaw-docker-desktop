@@ -1,0 +1,106 @@
+# =========================
+# 环境变量与机密文件 (重点忽略)
+# =========================
+.env
+.env.*
+!.env.example
+!.env.template
+
+# =========================
+# 虚拟环境 (重点忽略)
+# =========================
+.venv
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# =========================
+# 字节码与缓存文件
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# =========================
+# C 扩展文件
+# =========================
+*.so
+
+# =========================
+# 打包与构建目录
+# =========================
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# 日志文件
+# =========================
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =========================
+# 单元测试与覆盖率报告
+# =========================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# =========================
+# 框架与应用特定文件
+# =========================
+# Django
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# =========================
+# 常见 IDE 与系统缓存
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+

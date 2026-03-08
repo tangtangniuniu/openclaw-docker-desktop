@@ -144,7 +144,7 @@ RUN apt-get update && \
         chromium-browser fonts-liberation \
         libnss3 libgbm1 libasound2t64 && \
     update-alternatives --set x-www-browser /usr/bin/chromium-browser && \
-    PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
+    #PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright \
     npx playwright install chromium --with-deps && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache
